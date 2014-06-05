@@ -5,24 +5,46 @@ global $argv;
 
 require_once('settings.php');
 
+define('Hero3plusBlack', "HERO3+ Black Edition", true);
+
 class GoPro {
 	private $ip;
 	private $pt;
 	private $pw;
 	private $md;
+	private $ve;
 	private $md_url;
 	private $files;
-	function __construct($pw, $md="Hero3+BLACK", $ip="10.5.5.9", $pt="80") {
+	function __construct($pw, $md="auto", $ip="10.5.5.9", $pt="80") {
 	  $this->ip = $ip;
 	  $this->pt = $pt;
 	  $this->pw = $pw;
-	  $this->md = $md;
-	  $this->files = $this->files();
-	  switch ($md) {
-	  	case 'Hero3+BLACK':
+	  if ($md == "auto") {
+	  	$this->md = $this->getModel();
+	  }
+	  else {
+	    $this->md = $md;
+	  }
+	  if ($report_new_files) {
+	    $this->files = $this->files();
+	  }
+	  switch ($this->md) {
+	  	case Hero3plusBLACK:
 	  		$this->md_url = 'http://gopro.com/cameras/hd-hero3-black-edition';
 	  		break;
 	  }
+	}
+	
+	function getModel() {
+		$bytes = file_get_contents("http://$this->ip:$this->pt/camera/cv");
+		$this->ver  = substr($bytes, 4, 12);
+		$model_name = substr($bytes, 17);
+		switch ($model_name) {
+			case Hero3plusBlack: 
+			  $this->md = Hero3plusBlack;
+		}
+		
+		return $model_name;
 	}
 	
 	function run($dev, $app, $com) {
@@ -45,18 +67,24 @@ class GoPro {
 		  	$this->run('bacpac', 'PW', '00');
 		  	break;
 		  case 'START':
-		  	file_put_contents(sys_get_temp_dir().'/gopro_vid', json_encode($this->files()));
+		  	if ($report_new_files) {
+		  	  file_put_contents(sys_get_temp_dir().'/gopro_vid', json_encode($this->files()));
+		  	}
 		  	$this->run('bacpac', 'SH', '01');
 		  	break;
 		  case 'SHOOT':
 		  	$this->run('bacpac', 'SH', '01');
-		  	$return['http://dbpedia.org/resource/Photograph'] = $this->newfiles();
+		  	if ($report_new_files) {
+		  	  $return['http://dbpedia.org/resource/Photograph'] = $this->newfiles();
+		  	}
 		  	break;
 		  case 'STOP':
 		  	$this->run('bacpac', 'SH', '00');
-		  	$this->files = json_decode(file_get_contents(sys_get_temp_dir().'/gopro_vid'), TRUE);
-		  	unlink(sys_get_temp_dir().'/gopro_vid');
-		  	$return['http://dbpedia.org/resource/Video'] = $this->newfiles();
+		  	if ($report_new_files) {
+		  	  $this->files = json_decode(file_get_contents(sys_get_temp_dir().'/gopro_vid'), TRUE);
+		  	  unlink(sys_get_temp_dir().'/gopro_vid');
+		  	  $return['http://dbpedia.org/resource/Video'] = $this->newfiles();
+		  	}
 		  	break;
 		  case 'PREVON':
 		  	$this->run('camera', 'PV', '02');
@@ -146,6 +174,6 @@ class GoPro {
 }
 
 
-$gopro = new GoPro($pw);
+$gopro = new GoPro($pw, Hero3plusBlack);
 
 print_r($gopro->action($argv[1]));
