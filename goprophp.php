@@ -122,10 +122,96 @@ class GoPro {
 		  	$files = $this->files();
 		  	print_r($files);
 		  	break;
+		  case 'config':
+		  	$config = $this->getConfig();
+		  	print_r($config);
+		  	break;
 		  default:
 		  	print "Command '$act' not understood.\n";
 		  	break;
 		}
+		return $return;
+	}
+	
+	function getConfig() {
+		$bytes = unpack("C*", file_get_contents("http://$this->ip:$this->pt/camera/se?t=$this->pw"));
+		
+		$return = array();
+		
+		switch ($bytes['2']) {
+			case 0:
+				$return['Camera Mode'] = "Video";
+				break;
+			case 1:
+				$return['Camera Mode'] = "Photo";
+				break;
+			case 2:
+				$return['Camera Mode'] = "Burst";
+				break;
+			case 3:
+				$return['Camera Mode'] = "Timelapse";
+				break;
+		}
+		switch ($bytes['4']) {
+			case 0:
+				$return['Startup Mode'] = "Video";
+				break;
+			case 1:
+				$return['Startup Mode'] = "Photo";
+				break;
+			case 2:
+				$return['Startup Mode'] = "Burst";
+				break;
+			case 3:
+				$return['Startup Mode'] = "Timelapse";
+				break;
+		}
+		$return['Spot Meter'] = ($bytes['5'] == 0 ? "Off" : "On");
+		//TODO: 6 is timelapse interval
+		switch ($bytes['7']) {
+			case 0:
+				$return['Auto Power-off'] = "Never";
+				break;
+			case 1:
+				$return['Auto Power-off'] = "60s";
+				break;
+			case 2:
+				$return['Auto Power-off'] = "120s";
+				break;
+			case 3:
+				$return['Auto Power-off'] = "300s";
+				break;
+		}
+		
+		//8 	Current view angle
+		//9 	Current photo mode
+		//10 	Current video mode
+		//14 	Recording minutes
+		//15 	Recording seconds
+		//17 	Current beep volume
+		switch ($bytes['18']) {
+			case 2:
+				$return['LED Indicators'] = "4 LEDs";
+				break;
+			case 1:
+				$return['LED Indicators'] = "2 LEDs";
+				break;
+			case 0:
+				$return['LED Indicators'] = "Off";
+				break;
+		}
+		//19
+		$return['Battery %'] = $bytes['20'];
+		//22 	Photos available (hi byte) or 255 = no SD Card
+		//23 	Photos available (lo byte)
+		//24 	Photo count (hi byte)
+		//25 	Photo count (lo byte)
+		//26 	Video Time Remaining in minutes (hi byte)
+		//27 	Video Time Left (lo byte)
+		//28 	Video count (hi byte)
+		//29 	Video count (lo byte)
+		//30 	Recording
+
 		return $return;
 	}
 	
