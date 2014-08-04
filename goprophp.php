@@ -4,7 +4,6 @@
 global $argv;
 
 require_once('settings.php');
-
 define('Hero3plusBlack', "HERO3+ Black Edition", true);
 
 class GoPro {
@@ -25,6 +24,7 @@ class GoPro {
 	  else {
 	    $this->md = $md;
 	  }
+          global $report_new_files;
 	  if ($report_new_files) {
 	    $this->files = $this->files();
 	  }
