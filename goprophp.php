@@ -53,6 +53,7 @@ class GoPro {
 	}
 	
 	function action($act) {
+		global $report_new_files;
 		$return = array();
 		$return['http://dbpedia.org/resource/Camera'] = $this->md_url;
 		switch ($act){
